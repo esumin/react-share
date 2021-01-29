@@ -2,13 +2,18 @@ import assert from './utils/assert';
 import objectToGetParams from './utils/objectToGetParams';
 import createShareButton from './hocs/createShareButton';
 
-function facebookLink(url: string, { quote, hashtag }: { quote?: string; hashtag?: string }) {
-  assert(url, 'facebook.url');
+async function facebookLink(
+  url: () => Promise<string>,
+  { quote, hashtag }: { quote?: string; hashtag?: string },
+) {
+  const u = await url();
+
+  assert(u, 'facebook.url');
 
   return (
     'https://www.facebook.com/sharer/sharer.php' +
     objectToGetParams({
-      u: url,
+      u,
       quote,
       hashtag,
     })

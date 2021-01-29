@@ -1,12 +1,15 @@
 import React, { Component, Ref } from 'react';
 import cx from 'classnames';
+import isPromise from './utils/isPromise';
 
 type NetworkLink<LinkOptions> = (url: string, options: LinkOptions) => string;
 
-type WindowPosition = 'windowCenter' | 'screenCenter';
+type AsyncNetworkLink<LinkOptions> = (
+  url: () => Promise<string>,
+  options: LinkOptions,
+) => Promise<string>;
 
-const isPromise = (obj: any | Promise<any>) =>
-  !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
+type WindowPosition = 'windowCenter' | 'screenCenter';
 
 const getBoxPositionOnWindowCenter = (width: number, height: number) => ({
   left: window.outerWidth / 2 + (window.screenX || window.screenLeft || 0) - width / 2,
@@ -76,14 +79,14 @@ interface CustomProps<LinkOptions> {
   disabledStyle?: React.CSSProperties;
   forwardedRef?: Ref<HTMLButtonElement>;
   networkName: string;
-  networkLink: NetworkLink<LinkOptions>;
+  networkLink: NetworkLink<LinkOptions> | AsyncNetworkLink<LinkOptions>;
   onClick?: (event: React.MouseEvent<HTMLButtonElement>, link: string) => void;
   openShareDialogOnClick?: boolean;
   opts: LinkOptions;
   /**
    * URL of the shared page
    */
-  url: string;
+  url: string | (() => Promise<string>);
   style?: React.CSSProperties;
   windowWidth?: number;
   windowHeight?: number;
@@ -143,8 +146,6 @@ export default class ShareButton<LinkOptions> extends Component<Props<LinkOption
       opts,
     } = this.props;
 
-    const link = networkLink(url, opts);
-
     if (disabled) {
       return;
     }
@@ -157,6 +158,15 @@ export default class ShareButton<LinkOptions> extends Component<Props<LinkOption
       if (isPromise(returnVal)) {
         await returnVal;
       }
+    }
+
+    let link;
+    if (typeof url === 'string') {
+      const nl = networkLink as NetworkLink<LinkOptions>;
+      link = nl(url as string, opts);
+    } else {
+      const nl = networkLink as AsyncNetworkLink<LinkOptions>;
+      link = await nl(url as () => Promise<string>, opts);
     }
 
     if (openShareDialogOnClick) {
