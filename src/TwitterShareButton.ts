@@ -2,8 +2,8 @@ import assert from './utils/assert';
 import objectToGetParams from './utils/objectToGetParams';
 import createShareButton from './hocs/createShareButton';
 
-function twitterLink(
-  url: string,
+async function twitterLink(
+  url: () => Promise<string>,
   {
     title,
     via,
@@ -11,14 +11,16 @@ function twitterLink(
     related = [],
   }: { title?: string; via?: string; hashtags?: string[]; related?: string[] },
 ) {
-  assert(url, 'twitter.url');
+  const u = await url();
+
+  assert(u, 'twitter.url');
   assert(Array.isArray(hashtags), 'twitter.hashtags is not an array');
   assert(Array.isArray(related), 'twitter.related is not an array');
 
   return (
     'https://twitter.com/share' +
     objectToGetParams({
-      url,
+      url: u,
       text: title,
       via,
       hashtags: hashtags.length > 0 ? hashtags.join(',') : undefined,
